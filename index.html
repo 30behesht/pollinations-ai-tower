@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Tower — Build Your Tower of AI-Run Companies | Pollinations</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/@pollinations/ui@0.1.0-alpha.20/dist/connect.js"></script>
+    <style>
+        :root { --bg: #0b1020; --card: #141c33; --border: #283558; --text: #f1f5f9; --muted: #94a3b8; --gold: #fbbf24; --accent: #60a5fa; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: var(--card); border-bottom: 1px solid var(--border); gap: 1rem; flex-wrap: wrap; }
+        .brand { display: flex; align-items: center; gap: 0.75rem; }
+        .brand h1 { margin: 0; font-size: 1.2rem; }
+        main { max-width: 1080px; width: 100%; margin: 1.5rem auto; padding: 0 1rem; display: grid; grid-template-columns: 330px 1fr; gap: 1.25rem; flex: 1; }
+        @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+        .panel, .tower-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.15rem; display: flex; flex-direction: column; gap: 0.85rem; }
+        input, select, button { font: inherit; border-radius: 8px; border: 1px solid var(--border); background: #0b1020; color: var(--text); padding: 0.6rem 0.8rem; }
+        button.primary { background: var(--gold); color: #1c1917; font-weight: 700; border: none; cursor: pointer; }
+        button.run { background: var(--accent); color: #082f49; font-weight: 700; border: none; cursor: pointer; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .stats { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 0.6rem 0.8rem; background: #0b1020; border-radius: 8px; border: 1px solid var(--border); }
+        .tower { display: flex; flex-direction: column-reverse; gap: 0.65rem; }
+        .floor { display: grid; grid-template-columns: 96px 1fr; gap: 0.9rem; background: #0e1528; border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; align-items: center; }
+        .floor img { width: 96px; height: 72px; object-fit: cover; border-radius: 8px; background: #1e293b; }
+        .floor-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        .badge { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: #1e293b; color: var(--gold); }
+        .output { font-size: 0.86rem; color: var(--muted); margin-top: 0.35rem; line-height: 1.45; }
+        footer { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <h1>AI Tower</h1>
+            <a href="https://pollinations.ai/?ref=badge" target="_blank" rel="noopener">
+                <img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" height="24" />
+            </a>
+        </div>
+        <polli-connect id="polliConnect"></polli-connect>
+    </header>
+
+    <main>
+        <section class="panel">
+            <div class="stats">
+                <span>Floors: <strong id="floorCount">2</strong></span>
+                <span>Revenue: <strong id="revenue" style="color:var(--gold);">$12,000</strong></span>
+            </div>
+            <label for="companyGoal"><strong>Company Mission</strong></label>
+            <input id="companyGoal" value="Build indie AI tools for creators and small studios" />
+
+            <label for="deptSelect"><strong>Add Department Floor</strong></label>
+            <select id="deptSelect">
+                <option value="Design Studio|Lead Product Designer">Design Studio</option>
+                <option value="Engineering Core|Principal Systems Engineer">Engineering Core</option>
+                <option value="Growth &amp; Marketing|Head of Growth">Growth &amp; Marketing</option>
+                <option value="R&amp;D Lab|AI Research Director">R&amp;D Lab</option>
+                <option value="Customer Success|Support &amp; Ops Lead">Customer Success</option>
+            </select>
+            <button id="addFloorBtn" class="primary" type="button">+ Build Floor</button>
+            <button id="runCycleBtn" class="run" type="button">Run Company Work Cycle</button>
+            <div id="status" style="font-size:0.85rem;color:var(--muted);">Sign in with Pollinations above, build floors, and run a work cycle.</div>
+        </section>
+
+        <section class="tower-wrap">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong>Your AI Tower</strong>
+                <span style="font-size:0.82rem;color:var(--muted);">Top floor = newest expansion</span>
+            </div>
+            <div id="tower" class="tower"></div>
+        </section>
+    </main>
+
+    <footer>
+        Powered by <a href="https://pollinations.ai/?ref=badge" style="color:var(--accent)">pollinations.ai</a>
+    </footer>
+
+    <script>
+        const connectEl = document.getElementById("polliConnect");
+        const companyGoalEl = document.getElementById("companyGoal");
+        const deptSelect = document.getElementById("deptSelect");
+        const addFloorBtn = document.getElementById("addFloorBtn");
+        const runCycleBtn = document.getElementById("runCycleBtn");
+        const statusEl = document.getElementById("status");
+        const towerEl = document.getElementById("tower");
+        const floorCountEl = document.getElementById("floorCount");
+        const revenueEl = document.getElementById("revenue");
+
+        let revenue = 12000;
+        const floors = [
+            { level: 1, name: "Lobby & Ops", role: "Operations Manager", output: "Coordinating schedules and incoming client requests.", img: "" },
+            { level: 2, name: "Product Lab", role: "Product Strategist", output: "Drafting roadmap for the next creator launch.", img: "" },
+        ];
+
+        function placeholderSvg(label) {
+            return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="192" height="144"><rect width="100%" height="100%" fill="#1e293b"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="14">${label}</text></svg>`)}`;
+        }
+
+        function render() {
+            floorCountEl.textContent = String(floors.length);
+            revenueEl.textContent = `$${revenue.toLocaleString()}`;
+            towerEl.innerHTML = "";
+            for (const f of floors) {
+                const div = document.createElement("div");
+                div.className = "floor";
+                div.innerHTML = `
+                    <img src="${f.img || placeholderSvg(`Floor ${f.level}`)}" alt="${f.name}" />
+                    <div>
+                        <div class="floor-head">
+                            <strong>F${f.level} · ${f.name}</strong>
+                            <span class="badge">${f.role}</span>
+                        </div>
+                        <div class="output">${f.output}</div>
+                    </div>
+                `;
+                towerEl.appendChild(div);
+            }
+        }
+
+        addFloorBtn.addEventListener("click", async () => {
+            const [name, role] = deptSelect.value.split("|");
+            const level = floors.length + 1;
+            const floor = { level, name, role, output: "Newly constructed floor ready for assignment.", img: "" };
+            floors.push(floor);
+            render();
+
+            const apiKey = connectEl.apiKey;
+            if (apiKey) {
+                const prompt = `Isometric cozy pixel-art office floor interior for ${name}, warm lighting, tiny desks and monitors`;
+                try {
+                    const res = await fetch(`https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=384&height=288&nologo=true`, {
+                        headers: { "Authorization": `Bearer ${apiKey}` },
+                    });
+                    if (res.ok) {
+                        floor.img = URL.createObjectURL(await res.blob());
+                        render();
+                    }
+                } catch {}
+            }
+        });
+
+        runCycleBtn.addEventListener("click", async () => {
+            const apiKey = connectEl.apiKey;
+            if (!apiKey) {
+                statusEl.textContent = "Sign in with Pollinations above to run AI work cycles.";
+                return;
+            }
+            runCycleBtn.disabled = true;
+            statusEl.textContent = "Running AI work cycle across all tower floors...";
+            try {
+                const summary = floors.map((f) => `F${f.level} ${f.name} (${f.role})`).join(", ");
+                const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: "openai",
+                        response_format: { type: "json_object" },
+                        messages: [{
+                            role: "system",
+                            content: "Return JSON: { \"updates\": [{ \"level\": number, \"deliverable\": string }], \"revenue_delta\": number }. Keep each deliverable under 18 words.",
+                        }, {
+                            role: "user",
+                            content: `Company mission: ${companyGoalEl.value}. Floors: ${summary}. Simulate one productive sprint.`,
+                        }],
+                    }),
+                });
+                if (!res.ok) throw new Error(`API error (${res.status})`);
+                const data = await res.json();
+                const parsed = JSON.parse(data?.choices?.[0]?.message?.content || "{}");
+                if (Array.isArray(parsed.updates)) {
+                    for (const u of parsed.updates) {
+                        const target = floors.find((f) => f.level === u.level);
+                        if (target && u.deliverable) target.output = u.deliverable;
+                    }
+                }
+                revenue += Number(parsed.revenue_delta) || 3500;
+                render();
+                statusEl.textContent = "Sprint complete! Tower revenue updated.";
+            } catch (err) {
+                statusEl.textContent = `Error: ${err.message}`;
+            } finally {
+                runCycleBtn.disabled = false;
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>
